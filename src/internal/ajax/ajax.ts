@@ -1,5 +1,5 @@
 import { map } from '../operators/map';
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { AjaxConfig, AjaxRequest, AjaxDirection, ProgressEventType } from './types';
 import { AjaxResponse } from './AjaxResponse';
 import { AjaxTimeoutError, AjaxError } from './errors';
@@ -267,6 +267,7 @@ function ajaxGetJSON<T>(url: string, headers?: Record<string, string>): Observab
  */
 export const ajax: AjaxCreationMethod = (() => {
   const create = <T>(urlOrConfig: string | AjaxConfig) => {
+    setObservableTaskNameHint('rxjs.ajax');
     const config: AjaxConfig =
       typeof urlOrConfig === 'string'
         ? {

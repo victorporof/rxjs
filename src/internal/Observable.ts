@@ -1,5 +1,5 @@
 import { Operator } from './Operator';
-import { SafeSubscriber, Subscriber } from './Subscriber';
+import { SafeSubscriber, setSubscriberTaskNameHint, Subscriber } from './Subscriber';
 import { isSubscription, Subscription } from './Subscription';
 import { TeardownLogic, OperatorFunction, Subscribable, Observer } from './types';
 import { observable as Symbol_observable } from './symbol/observable';
@@ -7,6 +7,24 @@ import { pipeFromArray } from './util/pipe';
 import { config } from './config';
 import { isFunction } from './util/isFunction';
 import { errorContext } from './util/errorContext';
+import { scheduleTask } from './async-stack-tagging-wrapper';
+import type { Task } from './async-stack-tagging-wrapper';
+
+let defaultTaskName = 'rxjs.Observable';
+let nextTaskName: string | undefined;
+
+/**
+ * Hints which name to use when scheduling the next async stack tagging task.
+ * This name will be reset after the task is scheduled.
+ * @param name
+ * @param defaultName
+ */
+export function setObservableTaskNameHint(name?: string, defaultName?: string) {
+  nextTaskName ??= name;
+  if (defaultName) {
+    defaultTaskName = defaultName;
+  }
+}
 
 /**
  * A representation of any set of values over any amount of time. This is the most basic building block
@@ -25,6 +43,8 @@ export class Observable<T> implements Subscribable<T> {
    */
   operator: Operator<any, T> | undefined;
 
+  private _task: Task;
+
   /**
    * @constructor
    * @param {Function} subscribe the function that is called when the Observable is
@@ -33,6 +53,8 @@ export class Observable<T> implements Subscribable<T> {
    * `complete` can be called to notify of a successful completion.
    */
   constructor(subscribe?: (this: Observable<T>, subscriber: Subscriber<T>) => TeardownLogic) {
+    this._task = scheduleTask(nextTaskName ?? defaultTaskName);
+    nextTaskName = undefined;
     if (subscribe) {
       this._subscribe = subscribe;
     }
@@ -50,6 +72,7 @@ export class Observable<T> implements Subscribable<T> {
    * @deprecated Use `new Observable()` instead. Will be removed in v8.
    */
   static create: (...args: any[]) => any = <T>(subscribe?: (subscriber: Subscriber<T>) => TeardownLogic) => {
+    setObservableTaskNameHint('rxjs.Observable.create');
     return new Observable<T>(subscribe);
   };
 
@@ -216,27 +239,29 @@ export class Observable<T> implements Subscribable<T> {
     error?: ((error: any) => void) | null,
     complete?: (() => void) | null
   ): Subscription {
-    const subscriber = isSubscriber(observerOrNext) ? observerOrNext : new SafeSubscriber(observerOrNext, error, complete);
+    return this._task.run(() => {
+      setSubscriberTaskNameHint('rxjs.Observable.subscribe');
+      const subscriber = isSubscriber(observerOrNext) ? observerOrNext : new SafeSubscriber(observerOrNext, error, complete);
 
-    errorContext(() => {
-      const { operator, source } = this;
-      subscriber.add(
-        operator
-          ? // We're dealing with a subscription in the
-            // operator chain to one of our lifted operators.
-            operator.call(subscriber, source)
-          : source
-          ? // If `source` has a value, but `operator` does not, something that
-            // had intimate knowledge of our API, like our `Subject`, must have
-            // set it. We're going to just call `_subscribe` directly.
-            this._subscribe(subscriber)
-          : // In all other cases, we're likely wrapping a user-provided initializer
-            // function, so we need to catch errors and handle them appropriately.
-            this._trySubscribe(subscriber)
-      );
+      errorContext(() => {
+        const { operator, source } = this;
+        subscriber.add(
+          operator
+            ? // We're dealing with a subscription in the
+              // operator chain to one of our lifted operators.
+              operator.call(subscriber, source)
+            : source
+            ? // If `source` has a value, but `operator` does not, something that
+              // had intimate knowledge of our API, like our `Subject`, must have
+              // set it. We're going to just call `_subscribe` directly.
+              this._subscribe(subscriber)
+            : // In all other cases, we're likely wrapping a user-provided initializer
+              // function, so we need to catch errors and handle them appropriately.
+              this._trySubscribe(subscriber)
+        );
+      });
+      return subscriber;
     });
-
-    return subscriber;
   }
 
   /** @internal */
@@ -435,7 +460,12 @@ export class Observable<T> implements Subscribable<T> {
    * ```
    */
   pipe(...operations: OperatorFunction<any, any>[]): Observable<any> {
-    return pipeFromArray(operations)(this);
+    return this._task.run(() => {
+      setObservableTaskNameHint(undefined, 'rxjs.Observable.pipe');
+      const pipe = pipeFromArray(operations)(this);
+      setObservableTaskNameHint(undefined, 'rxjs.Observable');
+      return pipe;
+    });
   }
 
   /* tslint:disable:max-line-length */

@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { ObservedValueOf, ObservableInput } from '../types';
 import { innerFrom } from './innerFrom';
 
@@ -51,6 +51,7 @@ import { innerFrom } from './innerFrom';
  * an invocation of the given Observable factory function.
  */
 export function defer<R extends ObservableInput<any>>(observableFactory: () => R): Observable<ObservedValueOf<R>> {
+  setObservableTaskNameHint('rxjs.defer');
   return new Observable<ObservedValueOf<R>>((subscriber) => {
     innerFrom(observableFactory()).subscribe(subscriber);
   });

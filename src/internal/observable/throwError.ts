@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { Subscriber } from '../Subscriber';
 import { SchedulerLike } from '../types';
 import { isFunction } from '../util/isFunction';
@@ -119,6 +119,7 @@ export function throwError(error: any): Observable<never>;
 export function throwError(errorOrErrorFactory: any, scheduler: SchedulerLike): Observable<never>;
 
 export function throwError(errorOrErrorFactory: any, scheduler?: SchedulerLike): Observable<never> {
+  setObservableTaskNameHint('rxjs.throwError');
   const errorFactory = isFunction(errorOrErrorFactory) ? errorOrErrorFactory : () => errorOrErrorFactory;
   const init = (subscriber: Subscriber<never>) => subscriber.error(errorFactory());
   return new Observable(scheduler ? (subscriber) => scheduler.schedule(init as any, 0, subscriber) : init);

@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { ObservableInput, SchedulerLike, ObservedValueOf } from '../types';
 import { scheduled } from '../scheduled/scheduled';
 import { innerFrom } from './innerFrom';
@@ -100,5 +100,6 @@ export function from<O extends ObservableInput<any>>(input: O, scheduler: Schedu
  * @return {Observable<T>}
  */
 export function from<T>(input: ObservableInput<T>, scheduler?: SchedulerLike): Observable<T> {
+  setObservableTaskNameHint('rxjs.from');
   return scheduler ? scheduled(input, scheduler) : innerFrom(input);
 }

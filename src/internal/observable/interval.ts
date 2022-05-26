@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { asyncScheduler } from '../scheduler/async';
 import { SchedulerLike } from '../types';
 import { timer } from './timer';
@@ -49,6 +49,7 @@ import { timer } from './timer';
  * interval.
  */
 export function interval(period = 0, scheduler: SchedulerLike = asyncScheduler): Observable<number> {
+  setObservableTaskNameHint('rxjs.interval');
   if (period < 0) {
     // We cannot schedule an interval in the past.
     period = 0;

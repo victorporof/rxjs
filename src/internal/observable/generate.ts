@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { identity } from '../util/identity';
 import { ObservableInput, SchedulerLike } from '../types';
 import { isScheduler } from '../util/isScheduler';
@@ -337,6 +337,7 @@ export function generate<T, S>(
   resultSelectorOrScheduler?: ResultFunc<S, T> | SchedulerLike,
   scheduler?: SchedulerLike
 ): Observable<T> {
+  setObservableTaskNameHint('rxjs.generate');
   let resultSelector: ResultFunc<S, T>;
   let initialState: S;
 

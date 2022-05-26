@@ -1,5 +1,5 @@
 import { SchedulerLike, ValueFromArray } from '../types';
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { popScheduler } from '../util/args';
 import { from } from './from';
 
@@ -78,6 +78,7 @@ export function of<A extends readonly unknown[]>(...values: A): Observable<Value
  * described above and then completes.
  */
 export function of<T>(...args: Array<T | SchedulerLike>): Observable<T> {
+  setObservableTaskNameHint('rxjs.of');
   const scheduler = popScheduler(args);
   return from(args as T[], scheduler);
 }

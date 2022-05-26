@@ -1,5 +1,5 @@
 import { innerFrom } from '../observable/innerFrom';
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { mergeMap } from '../operators/mergeMap';
 import { isArrayLike } from '../util/isArrayLike';
 import { isFunction } from '../util/isFunction';
@@ -236,6 +236,7 @@ export function fromEvent<T>(
   options?: EventListenerOptions | ((...args: any[]) => T),
   resultSelector?: (...args: any[]) => T
 ): Observable<T> {
+  setObservableTaskNameHint('rxjs.fromEvent');
   if (isFunction(options)) {
     resultSelector = options;
     options = undefined;

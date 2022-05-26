@@ -1,5 +1,5 @@
 import { SchedulerLike } from '../types';
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { EMPTY } from './empty';
 
 export function range(start: number, count?: number): Observable<number>;
@@ -54,6 +54,7 @@ export function range(start: number, count: number | undefined, scheduler: Sched
  * sequential integers.
  */
 export function range(start: number, count?: number, scheduler?: SchedulerLike): Observable<number> {
+  setObservableTaskNameHint('rxjs.range');
   if (count == null) {
     // If one argument was passed, it's the count, not the start.
     count = start;

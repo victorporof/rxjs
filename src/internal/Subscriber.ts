@@ -7,6 +7,24 @@ import { noop } from './util/noop';
 import { nextNotification, errorNotification, COMPLETE_NOTIFICATION } from './NotificationFactories';
 import { timeoutProvider } from './scheduler/timeoutProvider';
 import { captureError } from './util/errorContext';
+import { scheduleTask } from './async-stack-tagging-wrapper';
+import type { Task } from './async-stack-tagging-wrapper';
+
+let defaultTaskName = 'rxjs.Subscriber';
+let nextTaskName: string | undefined;
+
+/**
+ * Hints which name to use when scheduling the next async stack tagging task.
+ * This name will be reset after the task is scheduled.
+ * @param name
+ * @param defaultName
+ */
+export function setSubscriberTaskNameHint(name?: string, defaultName?: string) {
+  nextTaskName ??= name;
+  if (defaultName) {
+    defaultTaskName = defaultName;
+  }
+}
 
 /**
  * Implements the {@link Observer} interface and extends the
@@ -43,12 +61,16 @@ export class Subscriber<T> extends Subscription implements Observer<T> {
   /** @deprecated Internal implementation detail, do not use directly. Will be made internal in v8. */
   protected destination: Subscriber<any> | Observer<any>; // this `any` is the escape hatch to erase extra type param (e.g. R)
 
+  private _task: Task;
+
   /**
    * @deprecated Internal implementation detail, do not use directly. Will be made internal in v8.
    * There is no reason to directly create an instance of Subscriber. This type is exported for typings reasons.
    */
   constructor(destination?: Subscriber<any> | Observer<any>) {
     super();
+    this._task = scheduleTask(nextTaskName ?? defaultTaskName);
+    nextTaskName = undefined;
     if (destination) {
       this.destination = destination;
       // Automatically chain subscriptions together here.
@@ -72,7 +94,7 @@ export class Subscriber<T> extends Subscription implements Observer<T> {
     if (this.isStopped) {
       handleStoppedNotification(nextNotification(value), this);
     } else {
-      this._next(value!);
+      this._task.run(() => this._next(value!));
     }
   }
 
@@ -88,7 +110,7 @@ export class Subscriber<T> extends Subscription implements Observer<T> {
       handleStoppedNotification(errorNotification(err), this);
     } else {
       this.isStopped = true;
-      this._error(err);
+      this._task.run(() => this._error(err));
     }
   }
 
@@ -103,7 +125,7 @@ export class Subscriber<T> extends Subscription implements Observer<T> {
       handleStoppedNotification(COMPLETE_NOTIFICATION, this);
     } else {
       this.isStopped = true;
-      this._complete();
+      this._task.run(() => this._complete());
     }
   }
 

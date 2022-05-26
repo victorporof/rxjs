@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { noop } from '../util/noop';
 
 /**
@@ -34,6 +34,7 @@ import { noop } from '../util/noop';
  * @see {@link of}
  * @see {@link throwError}
  */
+setObservableTaskNameHint('rxjs.never');
 export const NEVER = new Observable<never>(noop);
 
 /**

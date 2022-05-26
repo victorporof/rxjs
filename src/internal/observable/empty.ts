@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { SchedulerLike } from '../types';
 
 /**
@@ -63,6 +63,7 @@ import { SchedulerLike } from '../types';
  * @see {@link of}
  * @see {@link throwError}
  */
+setObservableTaskNameHint('rxjs.empty');
 export const EMPTY = new Observable<never>((subscriber) => subscriber.complete());
 
 /**
@@ -75,5 +76,6 @@ export function empty(scheduler?: SchedulerLike) {
 }
 
 function emptyScheduled(scheduler: SchedulerLike) {
+  setObservableTaskNameHint('rxjs.empty');
   return new Observable<never>((subscriber) => scheduler.schedule(() => subscriber.complete()));
 }

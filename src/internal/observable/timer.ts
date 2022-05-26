@@ -1,4 +1,4 @@
-import { Observable } from '../Observable';
+import { Observable, setObservableTaskNameHint } from '../Observable';
 import { SchedulerLike } from '../types';
 import { async as asyncScheduler } from '../scheduler/async';
 import { isScheduler } from '../util/isScheduler';
@@ -135,6 +135,7 @@ export function timer(
   intervalOrScheduler?: number | SchedulerLike,
   scheduler: SchedulerLike = asyncScheduler
 ): Observable<number> {
+  setObservableTaskNameHint('rxjs.timer');
   // Since negative intervalDuration is treated as though no
   // interval was specified at all, we start with a negative number.
   let intervalDuration = -1;
